@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: medsec_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: medsec_admin
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: medsec_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - medsec_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medsec_admin -d medsec_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LE COURTIER DE MESSAGES
+  redis:
+    image: redis:7-alpine
+    container_name: medsec_redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: medsec_api
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://medsec_admin:supersecretpassword@db:5432/medsec_db
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ../../backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # LE MOTEUR IA ASYNCHRONE
+  worker:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: medsec_worker
+    # On utilise la même image que l'API, mais on lance la commande Celery à la place d'Uvicorn
+    command: celery -A app.core.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://medsec_admin:supersecretpassword@db:5432/medsec_db
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ../../backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  medsec_postgres_data:

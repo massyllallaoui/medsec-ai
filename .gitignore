@@ -1,0 +1,18 @@
+# Python & Environnement
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.env
+
+# Uploads médicaux (Sécurité absolue : on ne push jamais de données patient)
+backend/uploads/
+
+# Node.js & Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Système Mac
+.DS_Store
