@@ -12,30 +12,18 @@ export default function Home() {
   const [aiDiagnosis, setAiDiagnosis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // --- SIMULATION API : CONNEXION ---
   const handleLogin = async (e) => {
     e.preventDefault();
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
-
-    try {
-      const res = await fetch('http://localhost:8001/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setToken(data.access_token);
-        setStatusMsg('Connecté avec succès.');
-      } else {
-        setStatusMsg('Erreur : ' + data.detail);
-      }
-    } catch (err) {
-      setStatusMsg('Erreur réseau. Vérifiez que l\'API tourne.');
+    if (email === 'radio@example.com' && password === 'azerty123') {
+      setToken('demo-jwt-token-12345');
+      setStatusMsg('');
+    } else {
+      setStatusMsg('Identifiants incorrects (Essayez radio@example.com / azerty123)');
     }
   };
 
+  // --- SIMULATION API : UPLOAD ---
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) return alert("Veuillez sélectionner une imagerie médicale.");
@@ -45,51 +33,24 @@ export default function Home() {
     setStatusMsg('Transmission chiffrée en cours...');
     setIsLoading(true);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('http://localhost:8001/api/v1/scans/upload', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setCurrentScanId(data.scan_id);
-        setStatusMsg('Image sécurisée. Analyse tensorielle en cours...');
-        setIsLoading(false);
-      } else {
-        setStatusMsg('Erreur lors de la transmission.');
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setStatusMsg('Erreur réseau lors de l\'upload.');
+    // On simule 1.5s de temps d'upload
+    setTimeout(() => {
+      setCurrentScanId('demo-' + Math.random().toString(36).substring(2, 10));
+      setStatusMsg('Image sécurisée. Analyse tensorielle en cours...');
       setIsLoading(false);
-    }
+    }, 1500);
   };
 
+  // --- SIMULATION API : RÉSULTAT IA ---
   const checkResult = async () => {
     if (!currentScanId) return;
-    try {
-      const res = await fetch(`http://localhost:8001/api/v1/scans/${currentScanId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (data.status === 'completed') {
-          setAiDiagnosis(data.ai_result);
-          setStatusMsg('Analyse terminée.');
-        } else if (data.status === 'failed') {
-          setAiDiagnosis('Échec du calcul. Fichier corrompu ou illisible.');
-          setStatusMsg('Erreur critique IA.');
-        } else {
-          setAiDiagnosis("Calcul des couches ResNet-50 en cours...");
-        }
-      }
-    } catch (err) {
-        console.error(err);
-    }
+    setAiDiagnosis("Calcul des couches ResNet-50 en cours...");
+    
+    // On simule 2s de calcul PyTorch
+    setTimeout(() => {
+      setAiDiagnosis("Structure tissulaire analysée sans anomalie majeure. (Confiance IA : 94.2%)");
+      setStatusMsg('Analyse terminée.');
+    }, 2000);
   };
 
   // --- INTERFACE DE CONNEXION ---
@@ -99,7 +60,7 @@ export default function Home() {
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">MedSec <span className="text-blue-600">AI</span></h1>
-            <p className="text-sm text-slate-500 mt-2">Portail d'Imagerie Clinique Sécurisé</p>
+            <p className="text-sm text-slate-500 mt-2">Portail d'Imagerie Clinique Sécurisé (Mode Démo)</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
@@ -149,7 +110,7 @@ export default function Home() {
       <main className="flex-1 p-8 md:p-12 overflow-y-auto">
         <header className="mb-10">
           <h1 className="text-3xl font-bold text-slate-900">Acquisition d'Imagerie</h1>
-          <p className="text-slate-500 mt-1">Plateforme propulsée par PyTorch & ResNet-50.</p>
+          <p className="text-slate-500 mt-1">Plateforme propulsée par PyTorch & ResNet-50. (Mode Démo)</p>
         </header>
 
         <div className="max-w-3xl">
@@ -199,12 +160,6 @@ export default function Home() {
                   Actualiser le Résultat
                 </button>
              </div>
-          )}
-          
-          {statusMsg && !currentScanId && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 text-sm font-medium">
-              Information Système : {statusMsg}
-            </div>
           )}
         </div>
       </main>
